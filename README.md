@@ -1,2 +1,2 @@
-# mule-sample
+# mulesoft-sample
 Mulesoft - Exemplos
