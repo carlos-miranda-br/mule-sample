@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:sap="http://www.mulesoft.org/schema/mule/sap"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="componente-validation-01-flow" doc:id="0ec6983e-97ae-4183-b315-65d26d7b15ab" initialState="stopped">
+		<logger level="INFO" doc:name="Logger" doc:id="6a23a32d-345e-427c-b720-adb9cf096428" message='vendedor-pontuacao - Inicio: #[payload]'/>
+		<ee:transform doc:name="Transform Message" doc:id="584cdaec-bee4-42ad-b33d-3ba13d43f30d" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="idocCabecalho" ><![CDATA[%dw 2.0
+output application/java
+---
+payload.ZSD_JSM_PONTUACAO_VENDEDOR.IDOC.ZSD_JSM_PONTUACAO_VENDEDOR]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<validation:is-true doc:name="CPF foi informado" doc:id="e1c7d89f-17e2-4106-9a21-d3b182e4ee00" expression='#[vars.idocCabecalho.CPF != null and vars.idocCabecalho.CPF != ""]' message='#["CPF do vendedor " ++ vars.idocCabecalho.CODIGO_SAP ++ " deve ser informado"]'/>
+		<choice doc:name="Choice" doc:id="854bb9cf-7e46-45b2-b10e-080e52a3c8b1">
+					<when doc:id="2c42a853-59cc-498f-adb4-dd5e0b5d0a57" expression="#[vars.idocCabecalho.PONTUACAO_ID != null]">
+						<set-variable value="#[%dw 2.0
+&#10;output text/plain
+&#10;---
+&#10;vars.idocCabecalho.PONTUACAO_ID as String]" doc:name="IDPontuacao" doc:id="23362b34-59f4-44e0-8e66-02e51279141a" variableName="IDPontuacao" />
+				<ee:transform doc:name="Transform Message" doc:id="caf3cd25-9932-4cd7-8004-d64aa5ddaf03">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   	"name":	    vars.idocCabecalho.NOME,
+   	"cpf":      vars.idocCabecalho.CPF,
+   	"emails": [ vars.idocCabecalho.EMAIL    default "emailnaocadastrado@tigre.com" ],
+    "phones": [ vars.idocCabecalho.TELEFONE default "99999999999" ],
+   	"erp_code": vars.idocCabecalho.CODIGO_SAP,
+   	"role":     vars.idocCabecalho.CARGO
+}
+]]></ee:set-payload>
+							</ee:message>
+							<ee:variables />
+						</ee:transform>
+					</when>
+			<otherwise>
+						<ee:transform doc:name="Transform Message" doc:id="a0a97282-ee8c-4d06-a91c-c15fbc9b1377">
+			<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name":	    vars.idocCabecalho.NOME,
+   	"cpf":      vars.idocCabecalho.CPF,
+   	"emails": [ vars.idocCabecalho.EMAIL    default "emailnaocadastrado@tigre.com" ],
+   	"phones": [ vars.idocCabecalho.TELEFONE default "99999999999" ],
+   	"erp_code": vars.idocCabecalho.CODIGO_SAP,
+   	"role":     vars.idocCabecalho.CARGO
+}
+]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+					</otherwise>
+				</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="e732c4cc-d409-4cd1-bd56-38feb0422185" message="vendedor-pontuacao - Fim: #[payload]" />
+	</flow>
+</mule>
